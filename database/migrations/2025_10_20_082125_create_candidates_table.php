@@ -12,18 +12,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('candidates', function (Blueprint $table) {
             if (Schema::getConnection()->getDriverName() === 'pgsql') {
                 $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             } else {
                 $table->uuid('id')->primary();
             }
-            $table->string('name', 150);
-            $table->string('email', 191)->unique();
-            $table->timestampTz('email_verified_at')->nullable();
-            $table->string('password', 255);
-            $table->rememberToken();
+            $table->uuid('period_id');
+            $table->uuid('student_id');
+            $table->uuid('created_by');
+            $table->uuid('updated_by');
+            $table->foreign('period_id')->references('id')->on('periods');
+            $table->foreign('student_id')->references('id')->on('students');
+            $table->foreign('created_by')->references('id')->on('users');
+            $table->foreign('updated_by')->references('id')->on('users');
             $table->timestampsTz();
+            $table->unique(['period_id','student_id']);
         });
     }
 
@@ -32,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('candidates');
     }
 };
