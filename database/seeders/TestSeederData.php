@@ -6,7 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Carbon; 
+use Illuminate\Support\Carbon;
 use App\Models\User;
 use App\Models\Periods;
 use App\Models\Students;
@@ -32,7 +32,7 @@ class TestSeederData extends Seeder
                 ['email' => 'admin@example.com'],
                 [
                     'name' => 'Admin',
-                    'password' => Hash::make('password'),
+                    'password' => Hash::make('Qwerty123*'),
                 ]
             );
 
