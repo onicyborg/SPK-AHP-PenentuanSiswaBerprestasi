@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\AssessorController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,6 +38,13 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/siswa', [SiswaController::class, 'store'])->name('siswa.store');
     Route::put('/siswa/{id}', [SiswaController::class, 'update'])->name('siswa.update');
     Route::delete('/siswa/{id}', [SiswaController::class, 'destroy'])->name('siswa.destroy');
+
+    // Users management (Assessors)
+    Route::get('/assessor', [AssessorController::class, 'index'])->name('assessor.index');
+    Route::get('/assessor/{id}', [AssessorController::class, 'show'])->name('assessor.show');
+    Route::post('/assessor', [AssessorController::class, 'store'])->name('assessor.store');
+    Route::put('/assessor/{id}', [AssessorController::class, 'update'])->name('assessor.update');
+    Route::delete('/assessor/{id}', [AssessorController::class, 'destroy'])->name('assessor.destroy');
 
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 });

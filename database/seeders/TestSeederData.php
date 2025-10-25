@@ -44,9 +44,15 @@ class TestSeederData extends Seeder
                 'updated_by' => $admin->id,
             ]);
 
-            // Students
+            // Students (20 records)
             $stu1 = Students::create(['nis' => 'NIS001', 'name' => 'Budi', 'class' => 'X IPA 1']);
             $stu2 = Students::create(['nis' => 'NIS002', 'name' => 'Siti', 'class' => 'X IPS 1']);
+            for ($i = 3; $i <= 20; $i++) {
+                $nis = 'NIS' . str_pad((string)$i, 3, '0', STR_PAD_LEFT);
+                $name = 'Siswa ' . str_pad((string)$i, 2, '0', STR_PAD_LEFT);
+                $class = $i % 2 === 0 ? 'X IPS ' . (($i % 5) + 1) : 'X IPA ' . (($i % 5) + 1);
+                Students::create(['nis' => $nis, 'name' => $name, 'class' => $class]);
+            }
 
             // Candidates (unique per (period, student))
             $cand1 = Candidates::create([

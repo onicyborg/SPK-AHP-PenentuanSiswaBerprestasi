@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Dotenv\Exception\ValidationException;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -57,26 +57,13 @@ class AuthController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'full_name' => ['nullable', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id . ',id'],
-            'position' => ['nullable', 'string', 'max:80'],
+            'name' => ['required', 'string', 'max:150'],
+            'email' => ['required', 'email', 'max:191', 'unique:users,email,' . $user->id . ',id'],
         ]);
 
-        // Update or create profile row
-        $profile = $user->profile->firstOrCreate(['user_id' => $user->id]);
-        if (array_key_exists('full_name', $validated)) {
-            $user->name = $validated['full_name'];
-        }
-        if (array_key_exists('position', $validated)) {
-            $profile->position = $validated['position'];
-        }
-        $profile->save();
-
-        // Email is stored on users table
+        $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->save();
-
-        $user->load(['profile']);
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
@@ -93,26 +80,21 @@ class AuthController extends Controller
                 'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             ]);
 
-            $profile = $user->profile()->firstOrCreate(['user_id' => $user->id]);
-
-            // Delete old file if stored locally under storage path
-            if (!empty($profile->avatar_url)) {
-                // If stored as full URL like /storage/avatars/xxx
-                $prefix = url('/storage') . '/';
-                if (str_starts_with($profile->avatar_url, $prefix)) {
-                    $relative = substr($profile->avatar_url, strlen($prefix));
+            // Delete old file if stored under /storage
+            if (!empty($user->photo_url)) {
+                $prefix = '/storage/';
+                if (str_starts_with($user->photo_url, $prefix)) {
+                    $relative = ltrim(substr($user->photo_url, strlen($prefix)), '/');
                     if ($relative && Storage::disk('public')->exists($relative)) {
                         Storage::disk('public')->delete($relative);
                     }
                 }
             }
 
-            $path = $request->file('photo')->store('avatars', 'public');
-            $publicUrl = Storage::url($path); // returns /storage/avatars/...
-            $profile->avatar_url = $publicUrl;
-            $profile->save();
-
-            $user->load('profile');
+            $path = $request->file('photo')->store('users', 'public');
+            $publicUrl = Storage::url($path); // /storage/users/...
+            $user->photo_url = $publicUrl;
+            $user->save();
 
             return response()->json([
                 'message' => 'Foto profil berhasil diperbarui',

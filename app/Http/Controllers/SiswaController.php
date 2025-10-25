@@ -112,11 +112,27 @@ class SiswaController extends Controller
     public function destroy(string $id)
     {
         $student = Students::findOrFail($id);
-        if (!empty($student->photo_url) && str_starts_with($student->photo_url, '/storage/')) {
-            $storagePath = 'public/' . ltrim(substr($student->photo_url, strlen('/storage/')), '/');
-            try { Storage::delete($storagePath); } catch (\Throwable $e) {}
+
+        // Cek relasi: jika masih memiliki relasi (mis. candidates), kembalikan error
+        if (method_exists($student, 'candidates') && $student->candidates()->exists()) {
+            return response()->json([
+                'message' => 'Tidak dapat menghapus. Data siswa sudah terhubung dengan data kandidat.',
+            ], 422);
         }
-        $student->delete();
+
+        try {
+            if (!empty($student->photo_url) && str_starts_with($student->photo_url, '/storage/')) {
+                $storagePath = 'public/' . ltrim(substr($student->photo_url, strlen('/storage/')), '/');
+                try { Storage::delete($storagePath); } catch (\Throwable $e) {}
+            }
+            $student->delete();
+        } catch (\Illuminate\Database\QueryException $qe) {
+            return response()->json([
+                'message' => 'Tidak dapat menghapus karena sudah terhubung dengan data lain.',
+                'error' => config('app.debug') ? $qe->getMessage() : null,
+            ], 409);
+        }
+
         return response()->json(['message' => 'Siswa berhasil dihapus']);
     }
 }
