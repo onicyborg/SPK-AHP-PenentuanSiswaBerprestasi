@@ -19,6 +19,7 @@ class Students extends Model
         'nis',
         'name',
         'class',
+        'photo_url',
     ];
 
     public function candidates()

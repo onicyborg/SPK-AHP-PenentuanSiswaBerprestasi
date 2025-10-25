@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('nis', 64)->unique();
             $table->string('name', 150);
             $table->string('class', 50)->nullable();
+            $table->string('photo_url', 255)->nullable();
             $table->timestampsTz();
         });
     }

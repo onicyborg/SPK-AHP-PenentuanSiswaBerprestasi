@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\SiswaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +31,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/photo', [AuthController::class, 'updateProfilePhoto'])->name('profile.photo');
     Route::post('/profile/change-password', [AuthController::class, 'changePassword'])->name('profile.change_password');
+
+    Route::get('/siswa', [SiswaController::class, 'index'])->name('siswa.index');
+    Route::get('/siswa/{id}', [SiswaController::class, 'show'])->name('siswa.show');
+    Route::post('/siswa', [SiswaController::class, 'store'])->name('siswa.store');
+    Route::put('/siswa/{id}', [SiswaController::class, 'update'])->name('siswa.update');
+    Route::delete('/siswa/{id}', [SiswaController::class, 'destroy'])->name('siswa.destroy');
 
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 });

@@ -11,6 +11,11 @@
                 id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false">
                 <!--begin:Menu item-->
                 <div class="menu-item">
+                    <div class="menu-content pt-8 pb-2">
+                        <span class="menu-section text-muted text-uppercase fs-8 ls-1">Dashboard</span>
+                    </div>
+                </div>
+                <div class="menu-item">
                     <a class="menu-link" href="{{ url('/') }}">
                         <span class="menu-icon">
                             <i class="ki-duotone ki-element-11 fs-2">
@@ -22,6 +27,11 @@
                         </span>
                         <span class="menu-title">Dashboard</span>
                     </a>
+                </div>
+                <div class="menu-item">
+                    <div class="menu-content pt-8 pb-2">
+                        <span class="menu-section text-muted text-uppercase fs-8 ls-1">Master Data</span>
+                    </div>
                 </div>
                 <div class="menu-item">
                     <a class="menu-link" href="{{ url('/siswa') }}">
@@ -46,7 +56,11 @@
                         <span class="menu-title">Assessor</span>
                     </a>
                 </div>
-
+                <div class="menu-item">
+                    <div class="menu-content pt-8 pb-2">
+                        <span class="menu-section text-muted text-uppercase fs-8 ls-1">Assessment (AHP Method)</span>
+                    </div>
+                </div>
                 <div class="menu-item">
                     <a class="menu-link" href="{{ url('/assessment') }}">
                         <span class="menu-icon">
