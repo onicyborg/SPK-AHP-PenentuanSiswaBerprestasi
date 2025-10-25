@@ -62,7 +62,7 @@
                     </div>
                 </div>
                 <div class="menu-item">
-                    <a class="menu-link" href="{{ url('/assessment') }}">
+                    <a class="menu-link" href="{{ url('/assessment/periods') }}">
                         <span class="menu-icon">
                             <i class="ki-duotone ki-check-square fs-2">
                                 <span class="path1"></span>

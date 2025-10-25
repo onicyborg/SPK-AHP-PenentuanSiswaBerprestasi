@@ -3,6 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\AssessorController;
+use App\Http\Controllers\Assessment\PeriodController as AssessmentPeriodController;
+use App\Http\Controllers\Assessment\CriteriaController as AssessmentCriteriaController;
+use App\Http\Controllers\Assessment\PairwiseCriteriaController as AssessmentPairwiseCriteriaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,6 +41,28 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/siswa', [SiswaController::class, 'store'])->name('siswa.store');
     Route::put('/siswa/{id}', [SiswaController::class, 'update'])->name('siswa.update');
     Route::delete('/siswa/{id}', [SiswaController::class, 'destroy'])->name('siswa.destroy');
+
+    // Assessment Periods
+    Route::prefix('assessment/periods')->name('assessment.periods.')->group(function () {
+        Route::get('/', [AssessmentPeriodController::class, 'index'])->name('index');
+        Route::get('/{period}', [AssessmentPeriodController::class, 'show'])->name('show');
+        Route::post('/', [AssessmentPeriodController::class, 'store'])->name('store');
+        Route::put('/{period}', [AssessmentPeriodController::class, 'update'])->name('update');
+        Route::delete('/{period}', [AssessmentPeriodController::class, 'destroy'])->name('destroy');
+
+        // Step 1: Criteria CRUD
+        Route::post('/{period}/criteria', [AssessmentCriteriaController::class, 'store'])->name('criteria.store');
+        Route::put('/{period}/criteria/{criterion}', [AssessmentCriteriaController::class, 'update'])->name('criteria.update');
+        Route::delete('/{period}/criteria/{criterion}', [AssessmentCriteriaController::class, 'destroy'])->name('criteria.destroy');
+
+        // Step 1: Pairwise criteria
+        Route::get('/{period}/pairwise/criteria', [AssessmentPairwiseCriteriaController::class, 'list'])->name('pairwise.criteria.list');
+        Route::post('/{period}/pairwise/criteria', [AssessmentPairwiseCriteriaController::class, 'upsert'])->name('pairwise.criteria.upsert');
+        Route::post('/{period}/pairwise/criteria/calculate', [AssessmentPairwiseCriteriaController::class, 'calculate'])->name('pairwise.criteria.calculate');
+
+        // Step 1: Submit Setup (lock)
+        Route::post('/{period}/submit-setup', [AssessmentPeriodController::class, 'submitSetup'])->name('submit_setup');
+    });
 
     // Users management (Assessors)
     Route::get('/assessor', [AssessorController::class, 'index'])->name('assessor.index');

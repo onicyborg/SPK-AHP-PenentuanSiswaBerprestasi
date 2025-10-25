@@ -31,12 +31,16 @@ class Periods extends Model
         'created_by',
         'updated_by',
         'finalized_at',
+        'is_results_stale',
+        'last_calculated_at',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
         'finalized_at' => 'datetime',
+        'is_results_stale' => 'boolean',
+        'last_calculated_at' => 'datetime',
     ];
 
     public function createdBy()

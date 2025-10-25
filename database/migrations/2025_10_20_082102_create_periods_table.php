@@ -22,6 +22,8 @@ return new class extends Migration
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->string('status', 20)->default('draft');
+            $table->boolean('is_results_stale')->default(false);
+            $table->timestampTz('last_calculated_at')->nullable();
             // FK to users (uuid)
             $table->uuid('created_by');
             $table->uuid('updated_by');
