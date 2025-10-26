@@ -21,7 +21,7 @@ return new class extends Migration
             $table->uuid('period_id');
             $table->uuid('criterion_id');
             $table->uuid('candidate_id');
-            $table->decimal('raw_value', 18, 4);
+            $table->decimal('raw_value', 5, 2);
             $table->decimal('normalized_value', 18, 8);
             $table->text('evidence_url')->nullable();
             $table->uuid('created_by');
@@ -35,10 +35,18 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->unique(['period_id','criterion_id','candidate_id']);
+            $table->unique(['period_id', 'criterion_id', 'candidate_id']);
             $table->index('criterion_id');
             $table->index('candidate_id');
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement("
+                ALTER TABLE scores
+                ADD CONSTRAINT scores_raw_value_bounds
+                CHECK (raw_value >= 0 AND raw_value <= 100)
+            ");
+        }
     }
 
     /**

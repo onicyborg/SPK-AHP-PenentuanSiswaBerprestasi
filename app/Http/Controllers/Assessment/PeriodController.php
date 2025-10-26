@@ -97,28 +97,61 @@ class PeriodController extends Controller
             return back()->with('error', 'Setup sudah terkunci');
         }
 
-        // Ambil kriteria dan matriks pairwise dari DB
-        $criteria = Criteria::where('period_id', $period->id)->orderBy('order_index')->get(['id']);
-        if ($criteria->count() < 2) {
-            return back()->with('error', 'Minimal 2 kriteria diperlukan');
-        }
-        $n = $criteria->count();
-        $indexOf = [];
-        foreach ($criteria as $idx => $c) { $indexOf[$c->id] = $idx; }
-        $matrix = array_fill(0, $n, array_fill(0, $n, 1.0));
-        $pairs = PairwiseCriteria::where('period_id', $period->id)->get();
-        foreach ($pairs as $p) {
-            $i = $indexOf[$p->i_criterion_id] ?? null;
-            $j = $indexOf[$p->j_criterion_id] ?? null;
-            if ($i === null || $j === null || $i === $j) continue;
-            $matrix[$i][$j] = (float)$p->value;
-            $matrix[$j][$i] = 1.0 / max((float)$p->value, 1e-9);
+        // Validasi konsistensi per cluster (root + setiap parent dengan anak)
+        $rootIds = Criteria::where('period_id', $period->id)
+            ->whereNull('parent_id')->orderBy('order_index')->pluck('id');
+        if ($rootIds->count() < 2) {
+            return back()->with('error', 'Minimal 2 kriteria pada root diperlukan');
         }
 
-        $result = $ahp->computeWeights($criteria->pluck('id')->all(), $matrix);
-        $CR = (float)($result['CR'] ?? 1.0);
-        if ($CR > 0.10) {
-            return back()->with('error', 'CR melebihi 0.10. Perbaiki matriks perbandingan.');
+        // Kumpulkan daftar parent yang memiliki anak
+        $parentIds = Criteria::where('period_id', $period->id)
+            ->whereIn('id', function($q) use ($period) {
+                $q->select('parent_id')->from('criteria')
+                  ->where('period_id', $period->id)
+                  ->whereNotNull('parent_id');
+            })->orderBy('order_index')->pluck('id');
+
+        $clusters = [];
+        $clusters[] = ['key' => 'root', 'ids' => $rootIds->all(), 'parent_id' => null];
+        foreach ($parentIds as $pid) {
+            $childIds = Criteria::where('period_id', $period->id)
+                ->where('parent_id', $pid)->orderBy('order_index')->pluck('id')->all();
+            if (count($childIds) >= 2) {
+                $clusters[] = ['key' => 'parent:'.$pid, 'ids' => $childIds, 'parent_id' => $pid];
+            }
+        }
+
+        $clusterResults = [];
+        foreach ($clusters as $cluster) {
+            $ids = $cluster['ids'];
+            $n = count($ids);
+            if ($n < 2) { continue; }
+
+            $indexOf = [];
+            foreach ($ids as $idx => $id) { $indexOf[$id] = $idx; }
+            $matrix = array_fill(0, $n, array_fill(0, $n, 1.0));
+
+            $pairs = PairwiseCriteria::where('period_id', $period->id)
+                ->whereIn('i_criterion_id', $ids)
+                ->whereIn('j_criterion_id', $ids)
+                ->get(['i_criterion_id','j_criterion_id','value']);
+            foreach ($pairs as $p) {
+                $i = $indexOf[$p->i_criterion_id] ?? null;
+                $j = $indexOf[$p->j_criterion_id] ?? null;
+                if ($i === null || $j === null || $i === $j) continue;
+                $v = max((float)$p->value, 1e-9);
+                $matrix[$i][$j] = $v;
+                $matrix[$j][$i] = 1.0 / $v;
+            }
+
+            $res = $ahp->computeWeights($ids, $matrix);
+            $CR = (float)($res['CR'] ?? 1.0);
+            if ($CR > 0.10) {
+                $label = $cluster['key'] === 'root' ? 'Root' : 'Sub-kriteria';
+                return back()->with('error', "CR melebihi 0.10 pada cluster: {$label}.");
+            }
+            $clusterResults[$cluster['key']] = $res;
         }
 
         // Validasi jumlah kandidat
@@ -127,19 +160,49 @@ class PeriodController extends Controller
             return back()->with('error', 'Minimal 2 kandidat diperlukan.');
         }
 
-        DB::transaction(function () use ($period, $criteria, $result, $CR) {
-            // Simpan snapshot bobot
-            foreach ($criteria as $c) {
+        DB::transaction(function () use ($period, $rootIds, $clusterResults) {
+            // Propagasi bobot global ke LEAF criteria
+            $now = now();
+            $rootRes = $clusterResults['root'] ?? ['weights' => [], 'CR' => null];
+            $rootWeights = (array)($rootRes['weights'] ?? []);
+
+            // Ambil mapping parent_id untuk semua criteria
+            $allCriteria = Criteria::where('period_id', $period->id)->get(['id','parent_id']);
+            $parentOf = $allCriteria->pluck('parent_id','id');
+
+            // Tentukan LEAF: id yang tidak menjadi parent bagi kriteria lain
+            $hasChildrenIds = Criteria::where('period_id', $period->id)
+                ->whereNotNull('parent_id')
+                ->pluck('parent_id')
+                ->unique()
+                ->filter()
+                ->values();
+            $leafIds = $allCriteria->pluck('id')->diff($hasChildrenIds)->values();
+
+            foreach ($leafIds as $leafId) {
+                $parentId = $parentOf[$leafId] ?? null;
+                if ($parentId) {
+                    // Leaf di bawah parent: bobot global = bobot root(parent) * bobot lokal leaf pada cluster parent
+                    $parentGlobal = (float)($rootWeights[$parentId] ?? 0.0);
+                    $childLocal = (float)($clusterResults['parent:'.$parentId]['weights'][$leafId] ?? 0.0);
+                    $global = $parentGlobal * $childLocal;
+                    $crAtLevel = (float)($clusterResults['parent:'.$parentId]['CR'] ?? 0.0);
+                } else {
+                    // Leaf di root (tidak punya anak dan parent null): bobot global = bobot root langsung
+                    $global = (float)($rootWeights[$leafId] ?? 0.0);
+                    $crAtLevel = (float)($rootRes['CR'] ?? 0.0);
+                }
+
                 Weights::updateOrCreate(
                     [
                         'period_id' => $period->id,
-                        'node_id' => $c->id,
+                        'node_id' => $leafId,
                         'level' => 'criterion',
                     ],
                     [
-                        'weight' => (float)($result['weights'][$c->id] ?? 0.0),
-                        'cr_at_level' => $CR,
-                        'computed_at' => now(),
+                        'weight' => $global,
+                        'cr_at_level' => $crAtLevel,
+                        'computed_at' => $now,
                     ]
                 );
             }

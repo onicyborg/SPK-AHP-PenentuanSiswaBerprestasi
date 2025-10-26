@@ -88,23 +88,57 @@
                     <table class="table table-bordered align-middle" id="pairwiseTable">
                         <thead>
                             <tr>
-                                <th class="bg-light"></th>
+                                <th class="bg-light text-center small"></th>
                                 @foreach ($criteria as $c)
-                                    <th class="bg-light text-center">{{ $c->name }}</th>
+                                    <th class="bg-light text-center">
+                                        <div class="d-inline-flex align-items-center gap-2">
+                                            <span>{{ $c->name }}</span>
+                                            <span class="badge badge-light-secondary">j</span>
+                                        </div>
+                                    </th>
                                 @endforeach
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($criteria as $i => $ci)
                                 <tr>
-                                    <th class="bg-light">{{ $ci->name }}</th>
+                                    <th class="bg-light">
+                                        <div class="d-inline-flex align-items-center gap-2">
+                                            <span>{{ $ci->name }}</span>
+                                            <span class="badge badge-light-secondary">i</span>
+                                        </div>
+                                    </th>
                                     @foreach ($criteria as $j => $cj)
                                         @if ($i === $j)
                                             <td class="text-center text-muted">1</td>
                                         @elseif ($i < $j)
                                             <td>
-                                                <input type="number" min="0.111" step="0.001" max="9" class="form-control form-control-sm pair-input"
-                                                    data-i="{{ $ci->id }}" data-j="{{ $cj->id }}" {{ $isDraft ? '' : 'readonly' }} placeholder="1..9">
+                                                <select class="form-select form-select-sm pair-input" data-i="{{ $ci->id }}" data-j="{{ $cj->id }}" {{ $isDraft ? '' : 'disabled' }}>
+                                                    <option value="" selected>Pilih...</option>
+                                                    <optgroup label="i lebih penting dari j">
+                                                        <option value="2">2 (sedikit lebih)</option>
+                                                        <option value="3">3 (cukup lebih)</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5 (kuat)</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7 (sangat kuat)</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9 (ekstrem)</option>
+                                                    </optgroup>
+                                                    <optgroup label="setara">
+                                                        <option value="1">1 (setara)</option>
+                                                    </optgroup>
+                                                    <optgroup label="j lebih penting dari i">
+                                                        <option value="0.5">1/2 (sedikit lebih)</option>
+                                                        <option value="0.333">1/3 (cukup lebih)</option>
+                                                        <option value="0.25">1/4</option>
+                                                        <option value="0.2">1/5 (kuat)</option>
+                                                        <option value="0.1667">1/6</option>
+                                                        <option value="0.1429">1/7 (sangat kuat)</option>
+                                                        <option value="0.125">1/8</option>
+                                                        <option value="0.111">1/9 (ekstrem)</option>
+                                                    </optgroup>
+                                                </select>
                                             </td>
                                         @else
                                             <td class="text-center"><span class="reciprocal" data-i="{{ $ci->id }}" data-j="{{ $cj->id }}">-</span></td>
@@ -119,8 +153,8 @@
                 <div class="d-flex gap-2 mt-3">
                     @if ($isDraft)
                     <button id="btnSaveMatrix" class="btn btn-light-primary btn-sm">Simpan Matrix</button>
-                    @endif
                     <button id="btnCalculate" class="btn btn-primary btn-sm">Hitung Bobot & CR</button>
+                    @endif
                 </div>
 
                 <div class="mt-4" id="calcResult" style="display:none;">
@@ -143,7 +177,7 @@
     @if ($isDraft)
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSubmitSetup">Submit Setup (Lock)</button>
     @else
-    <div class="alert alert-info py-2 px-3 mb-0">Langkah ini terkunci. Untuk mengubah, kembalikan status ke draft.</div>
+    <div class="alert alert-info py-2 px-3 mb-0">Langkah ini terkunci karena data sudah di submit</div>
     @endif
     <input type="hidden" id="periodId" value="{{ $period->id }}">
 </div>
@@ -281,6 +315,18 @@
     const periodId = document.getElementById('periodId')?.value;
     const pairInputs = document.querySelectorAll('#pairwiseTable .pair-input');
     const clusterIds = @json(($criteria ?? collect())->pluck('id'));
+    const allowedSaaty = ["9","8","7","6","5","4","3","2","1","0.5","0.333","0.25","0.2","0.1667","0.1429","0.125","0.111"];
+    function mapToOptionValue(val){
+        const s = String(val);
+        if (allowedSaaty.includes(s)) return s;
+        const x = parseFloat(val || '0');
+        let best = allowedSaaty[0], diff = Infinity;
+        for (const v of allowedSaaty){
+            const d = Math.abs(parseFloat(v) - x);
+            if (d < diff){ best = v; diff = d; }
+        }
+        return best;
+    }
 
     // Simple Bootstrap toast helper
     function showToast(message, variant = 'success'){
@@ -307,7 +353,7 @@
 
     // Mirror reciprocal UI only (client-side)
     pairInputs.forEach(function(inp){
-        inp.addEventListener('input', function(){
+        const handler = function(){
             const i = inp.getAttribute('data-i');
             const j = inp.getAttribute('data-j');
             const val = parseFloat(inp.value || '0');
@@ -315,7 +361,9 @@
             if (rec) {
                 rec.textContent = val > 0 ? (1/val).toFixed(3) : '-';
             }
-        });
+        };
+        inp.addEventListener('change', handler);
+        inp.addEventListener('input', handler);
     });
 
     // Save matrix (upsert)
@@ -397,10 +445,10 @@
                     const selector = `#pairwiseTable .pair-input[data-i='${row.i_id}'][data-j='${row.j_id}']`;
                     const inp = document.querySelector(selector);
                     if (inp) {
-                        inp.value = Number(row.value || 0).toFixed(3);
+                        inp.value = mapToOptionValue(row.value);
                         // mirror reciprocal
                         const rec = document.querySelector(`#pairwiseTable .reciprocal[data-i='${row.j_id}'][data-j='${row.i_id}']`);
-                        if (rec) rec.textContent = (1/Number(row.value || 1)).toFixed(3);
+                        if (rec) rec.textContent = (1/Number(inp.value || 1)).toFixed(3);
                     }
                 });
             }).catch(()=>{});

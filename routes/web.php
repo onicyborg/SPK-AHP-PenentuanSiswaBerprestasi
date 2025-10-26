@@ -5,18 +5,17 @@ use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\AssessorController;
 use App\Http\Controllers\Assessment\PeriodController as AssessmentPeriodController;
 use App\Http\Controllers\Assessment\CriteriaController as AssessmentCriteriaController;
+use App\Http\Controllers\Assessment\CandidateController as AssessmentCandidateController;
 use App\Http\Controllers\Assessment\PairwiseCriteriaController as AssessmentPairwiseCriteriaController;
+use App\Http\Controllers\Assessment\PairwiseAlternativesController as AssessmentPairwiseAlternativesController;
+use App\Http\Controllers\Assessment\ScoreController as AssessmentScoreController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
+| This file defines the web routes for the application.
 */
 
 Route::middleware('guest')->group(function () {
@@ -24,26 +23,25 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
 });
 
-
 Route::group(['middleware' => 'auth'], function () {
-    Route::get('/', function () {
-        return view('welcome');
-    })->name('dashboard');
+    Route::get('/', function () { return view('welcome'); })->name('dashboard');
 
-
+    // Profile
     Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
     Route::put('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/photo', [AuthController::class, 'updateProfilePhoto'])->name('profile.photo');
     Route::post('/profile/change-password', [AuthController::class, 'changePassword'])->name('profile.change_password');
 
+    // Students
     Route::get('/siswa', [SiswaController::class, 'index'])->name('siswa.index');
     Route::get('/siswa/{id}', [SiswaController::class, 'show'])->name('siswa.show');
     Route::post('/siswa', [SiswaController::class, 'store'])->name('siswa.store');
     Route::put('/siswa/{id}', [SiswaController::class, 'update'])->name('siswa.update');
     Route::delete('/siswa/{id}', [SiswaController::class, 'destroy'])->name('siswa.destroy');
 
-    // Assessment Periods
+    // Assessment Periods (Wizard Steps)
     Route::prefix('assessment/periods')->name('assessment.periods.')->group(function () {
+        // Period CRUD
         Route::get('/', [AssessmentPeriodController::class, 'index'])->name('index');
         Route::get('/{period}', [AssessmentPeriodController::class, 'show'])->name('show');
         Route::post('/', [AssessmentPeriodController::class, 'store'])->name('store');
@@ -62,6 +60,34 @@ Route::group(['middleware' => 'auth'], function () {
 
         // Step 1: Submit Setup (lock)
         Route::post('/{period}/submit-setup', [AssessmentPeriodController::class, 'submitSetup'])->name('submit_setup');
+
+        // Step 2: Candidates pick list
+        Route::get('/{period}/candidates/available', [AssessmentCandidateController::class, 'available'])->name('candidates.available');
+        Route::get('/{period}/candidates/selected', [AssessmentCandidateController::class, 'selected'])->name('candidates.selected');
+        Route::post('/{period}/candidates/attach', [AssessmentCandidateController::class, 'attach'])->name('candidates.attach');
+        Route::post('/{period}/candidates/detach', [AssessmentCandidateController::class, 'detach'])->name('candidates.detach');
+
+        // Step 3: Pairwise alternatives per criterion
+        Route::get('/{period}/pairwise/alternatives', [AssessmentPairwiseAlternativesController::class, 'list'])->name('pairwise.alternatives.list');
+        Route::post('/{period}/pairwise/alternatives', [AssessmentPairwiseAlternativesController::class, 'upsert'])->name('pairwise.alternatives.upsert');
+        Route::post('/{period}/pairwise/alternatives/calculate', [AssessmentPairwiseAlternativesController::class, 'calculate'])->name('pairwise.alternatives.calculate');
+
+        // Step 3 (new): Scores grid endpoints
+        Route::get('/{period}/scores', [AssessmentScoreController::class, 'index'])->name('scores.index');
+        Route::post('/{period}/scores/batch', [AssessmentScoreController::class, 'batchStore'])->name('scores.batch');
+        Route::post('/{period}/scores/calculate', [AssessmentScoreController::class, 'calculate'])->name('scores.calculate');
+        Route::get('/{period}/scores/stats', [AssessmentScoreController::class, 'stats'])->name('scores.stats');
+        Route::get('/{period}/scores/details', [AssessmentScoreController::class, 'normalizationDetails'])->name('scores.details');
+        Route::get('/{period}/scores/completeness', [AssessmentScoreController::class, 'completeness'])->name('scores.completeness');
+
+        // Step 4: Results & summaries
+        Route::get('/{period}/results', [AssessmentScoreController::class, 'results'])->name('results.index');
+        Route::get('/{period}/results/{candidateId}/breakdown', [AssessmentScoreController::class, 'breakdown'])->name('results.breakdown');
+        Route::get('/{period}/weights', [AssessmentScoreController::class, 'weightsList'])->name('weights.list');
+        Route::get('/{period}/weights/roots', [AssessmentScoreController::class, 'weightsRoots'])->name('weights.roots');
+        Route::get('/{period}/criteria', [AssessmentScoreController::class, 'criteriaList'])->name('criteria.list');
+        Route::get('/{period}/criteria/{parentId}/children/stats', [AssessmentScoreController::class, 'childrenStats'])->name('criteria.children.stats');
+        Route::post('/{period}/finalize', [AssessmentScoreController::class, 'finalize'])->name('periods.finalize');
     });
 
     // Users management (Assessors)
