@@ -67,10 +67,10 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header d-flex align-items-center justify-content-between">
-                <h5 class="mb-0">Ringkasan Normalisasi</h5>
-                <select id="criterionSelect" class="form-select form-select-sm" style="max-width: 240px;"></select>
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between flex-nowrap gap-2">
+                <h5 class="mb-0 text-truncate" style="min-width:0">Ringkasan Normalisasi</h5>
+                <select id="criterionSelect" class="form-select form-select-sm ms-2" style="max-width: 240px; flex:0 0 auto;"></select>
             </div>
             <div class="card-body" id="summaryBox">
                 <div class="text-muted">Pilih kriteria untuk melihat statistik.</div>
