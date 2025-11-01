@@ -10,6 +10,12 @@ use App\Models\Criteria;
 use App\Models\PairwiseCriteria;
 use App\Models\Candidates;
 use App\Models\Weights;
+use App\Models\Scores;
+use App\Models\PairwiseAlternatives;
+use App\Models\Results;
+use App\Models\ResultsBreakdown;
+use App\Models\NormalizationStats;
+use App\Models\AuditLogs;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -87,8 +93,26 @@ class PeriodController extends Controller
 
     public function destroy(Periods $period): RedirectResponse
     {
-        $period->delete();
-        return redirect()->route('assessment.periods.index')->with('success', 'Periode berhasil dihapus');
+        DB::transaction(function () use ($period) {
+            // Hapus data turunan yang mereferensikan period ini (tanpa menyentuh master data: students, users)
+            ResultsBreakdown::where('period_id', $period->id)->delete();
+            Results::where('period_id', $period->id)->delete();
+            NormalizationStats::where('period_id', $period->id)->delete();
+            Scores::where('period_id', $period->id)->delete();
+            PairwiseAlternatives::where('period_id', $period->id)->delete();
+            PairwiseCriteria::where('period_id', $period->id)->delete();
+            Weights::where('period_id', $period->id)->delete();
+            Candidates::where('period_id', $period->id)->delete();
+            Criteria::where('period_id', $period->id)->delete();
+            AuditLogs::where('period_id', $period->id)->delete();
+
+            // Terakhir hapus record period
+            // Nonaktifkan event agar observer tidak menulis audit log baru yang melanggar FK
+            Periods::withoutEvents(function () use ($period) {
+                $period->delete();
+            });
+        });
+        return redirect()->route('assessment.periods.index')->with('success', 'Periode dan seluruh data terkait berhasil dihapus');
     }
 
     public function submitSetup(Request $request, Periods $period, AhpService $ahp): RedirectResponse

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\AssessorController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Assessment\PeriodController as AssessmentPeriodController;
 use App\Http\Controllers\Assessment\CriteriaController as AssessmentCriteriaController;
 use App\Http\Controllers\Assessment\CandidateController as AssessmentCandidateController;
@@ -24,7 +25,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::group(['middleware' => 'auth'], function () {
-    Route::get('/', function () { return view('welcome'); })->name('dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Profile
     Route::get('/profile', [AuthController::class, 'profile'])->name('profile');

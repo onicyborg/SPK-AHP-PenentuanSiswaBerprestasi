@@ -66,7 +66,7 @@
                     <!--begin::Mobile logo-->
                     <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
                         <a href="index.html" class="d-lg-none">
-                            <img alt="Logo" src="assets/media/logos/logo-only.png" class="h-30px" />
+                            <img alt="Logo" src="assets/media/logos/logo-only.jpg" class="h-30px" />
                         </a>
                     </div>
                     <!--end::Mobile logo-->
@@ -237,9 +237,9 @@
                     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
                         <!--begin::Logo image-->
                         <a href="/">
-                            <img alt="Logo" src="assets/media/logos/logo-with-text.png"
+                            <img alt="Logo" src="assets/media/logos/logo-with-text.jpg"
                                 class="h-40px app-sidebar-logo-default" />
-                            <img alt="Logo" src="assets/media/logos/logo-only.png"
+                            <img alt="Logo" src="assets/media/logos/logo-only.jpg"
                                 class="h-30px app-sidebar-logo-minimize" />
                         </a>
                         <div id="kt_app_sidebar_toggle"
