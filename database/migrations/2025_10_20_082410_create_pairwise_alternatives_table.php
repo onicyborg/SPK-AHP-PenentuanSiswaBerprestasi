@@ -32,7 +32,7 @@ return new class extends Migration
             $table->foreign('j_candidate_id')->references('id')->on('candidates');
             $table->foreign('updated_by')->references('id')->on('users');
 
-            $table->unique(['period_id','criterion_id','i_candidate_id','j_candidate_id']);
+            $table->unique(['period_id','criterion_id','i_candidate_id','j_candidate_id'], 'pair_alt_unique');
             $table->index('criterion_id');
         });
 
