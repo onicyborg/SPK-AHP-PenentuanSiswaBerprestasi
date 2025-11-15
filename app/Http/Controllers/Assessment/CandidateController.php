@@ -9,6 +9,7 @@ use App\Models\Periods;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CandidateController extends Controller
 {
@@ -72,6 +73,7 @@ class CandidateController extends Controller
         $rows = [];
         foreach (array_unique($data['student_ids']) as $sid) {
             $rows[] = [
+                'id' => (string) Str::uuid(),
                 'period_id' => $period->id,
                 'student_id' => $sid,
                 'created_by' => Auth::id(),
