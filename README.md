@@ -44,7 +44,7 @@ Ikuti langkah-langkah berikut untuk menjalankan project ini dari GitHub di local
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/onicyborg/SPK-AHP-PenentuanSiswaBerprestasi.git
 cd SPK-AHP-PenentuanSiswaBerprestasi
 ```
 
@@ -90,6 +90,8 @@ Buat database baru pada server database Anda, contoh (MySQL):
 ```sql
 CREATE DATABASE spk_ahp;
 ```
+
+*Perintah diatas dijalankan di phpMyAdmin.
 
 ### 6️⃣ Migrasi Database
 
