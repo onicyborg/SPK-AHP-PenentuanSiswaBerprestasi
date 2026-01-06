@@ -99,13 +99,19 @@ CREATE DATABASE spk_ahp;
 php artisan migrate
 ```
 
-### 7️⃣ Setup Storage Link
+### 7️⃣ Seeder Admin User
+
+```bash
+php artisan db:seed AdminUserSeeder
+```
+
+### 8️⃣ Setup Storage Link
 
 ```bash
 php artisan storage:link
 ```
 
-### 8️⃣ Jalankan Aplikasi
+### 9️⃣ Jalankan Aplikasi
 
 ```bash
 php artisan serve
